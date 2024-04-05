@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-
 import asyncio
 from playwright.async_api import async_playwright
 import requests
 import os
-
 
 products = []
 with open("./products.txt") as f:
