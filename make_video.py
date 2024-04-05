@@ -1,38 +1,68 @@
-from moviepy.editor import *
+from moviepy.editor import (
+    ImageClip,
+    VideoFileClip,
+    AudioFileClip,
+    CompositeVideoClip,
+    concatenate_videoclips,
+    vfx,
+)
 import os
+import random
+from PIL import Image
+
+
+clip_w = 1080 / 2
+clip_h = 1920 / 2
+
 
 all_folders = os.listdir("./products")
-for folder in all_folders:
-
+for index, folder in enumerate(all_folders):
     image_files = os.listdir(f"./products/{folder}")
     try:
         image_files.remove("info.txt")
         image_files.remove(".DS_Store")
     except:
         pass
-
-    print(image_files)
-
-    if len(image_files) < 2:
+    if len(image_files) < 3:
         continue
 
-    # Load images
-    images = [
-        ImageClip(f"./products/{folder}/{img}").set_duration(2) for img in image_files
-    ]  # Set duration for each image (2 seconds in this case)
+    images = []
 
-    # Concatenate images into a video clip
-    video_clip = concatenate_videoclips(images, method="compose")
+    for img in image_files:
 
-    # Load background music
-    music_clip = AudioFileClip("starlilpeep.mp3")
-    music_clip.set_duration(10)
+        # check transp
+        img_mode = Image.open(f"./products/{folder}/{img}")
+        img = ImageClip(f"./products/{folder}/{img}")
+        img = img.resize(width=clip_w - 20)
+        img = img.set_duration(5)
+        # if img_mode.mode != "RGBA" or img_mode.mode != "P":
+        #     img = img.fx(vfx.margin, 5)
+        images.append(img)
 
-    # Set the audio for the video clip
-    video_clip = video_clip.set_audio(music_clip)
+    images_clip = concatenate_videoclips(images, method="compose")
 
-    # Write the final video file
-    video_clip.write_videofile("output_video.mp4", fps=24)  # Adjust fps if needed
+    # music_clip = AudioFileClip("relax_music.mp3")
+    # music_clip.set_duration(10)
 
-    print("break")
-    break
+    bg_clips = os.listdir(f"./bg_clips")
+    print(bg_clips)
+
+    bg_clip = VideoFileClip(f"./bg_clips/{random.choice(bg_clips)}")
+    bg_duration = bg_clip.duration
+    bg_clip = bg_clip.without_audio()
+    bg_clip = bg_clip.rotate(90)
+    bg_clip = bg_clip.resize(width=clip_w, height=clip_h)
+
+    start = random.randint(0, int(bg_duration - images_clip.duration))
+    end = start + int(images_clip.duration)
+    print(start, end)
+    bg_clip = bg_clip.subclip(start, end)
+
+    print(bg_clip.size)
+    final_clip = CompositeVideoClip(
+        clips=[bg_clip, images_clip.set_position("center")], size=bg_clip.size
+    )
+
+    final_clip.write_videofile(f"output_video{index}.mp4", fps=10)
+
+    print(f"output_video{index}.mp4")
