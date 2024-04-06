@@ -12,59 +12,116 @@ import os
 import random
 from PIL import Image
 
+# int(1080 / 2)
+clip_w = int(1080 / 2)
+clip_h = int(1920 / 2)
 
-clip_w = 1080 / 2
-clip_h = 1920 / 2
-
-
+bg_clips = os.listdir(f"./bg_clips")
+ol_clips = os.listdir(f"./overlay_clips")
 all_folders = os.listdir("./products")
+
+
 for index, folder in enumerate(all_folders):
     image_files = os.listdir(f"./products/{folder}")
-    try:
-        image_files.remove("info.txt")
-        image_files.remove(".DS_Store")
-    except:
-        pass
+    #
+    #
+    #
+    removes = ["info.txt", ".DS_Store", "product_video.mp4"]
+    for r in removes:
+        try:
+            image_files.remove(r)
+        except:
+            pass
     if len(image_files) < 3:
         continue
-
+    #
+    #
+    #
+    # ------------- images clip -------------
     images = []
-
     for img in image_files:
+        img = ImageClip(f"./products/{folder}/{img}")
+        img = img.resize(width=clip_w - 100).set_duration(4)
 
         # check transp
-        img_mode = Image.open(f"./products/{folder}/{img}")
-        img = ImageClip(f"./products/{folder}/{img}")
-        img = img.resize(width=clip_w - 20)
-        img = img.set_duration(5)
+        # img_mode = Image.open(f"./products/{folder}/{img}")
         # if img_mode.mode != "RGBA" or img_mode.mode != "P":
         #     img = img.fx(vfx.margin, 5)
         images.append(img)
 
+    random.shuffle(images)
     images_clip = concatenate_videoclips(images, method="compose")
-
-    # music_clip = AudioFileClip("relax_music.mp3")
-    # music_clip.set_duration(10)
-
-    bg_clips = os.listdir(f"./bg_clips")
-    print(bg_clips)
-
+    images_clip = images_clip.rotate(random.randint(-5, 5))
+    # ------------- images clip -------------
+    #
+    #
+    #
+    # ------------- bg clip -------------
     bg_clip = VideoFileClip(f"./bg_clips/{random.choice(bg_clips)}")
-    bg_duration = bg_clip.duration
-    bg_clip = bg_clip.without_audio()
-    bg_clip = bg_clip.rotate(90)
-    bg_clip = bg_clip.resize(width=clip_w, height=clip_h)
+    bg_start = random.randint(10, int(bg_clip.duration - images_clip.duration))
+    bg_end = bg_start + int(images_clip.duration)
 
-    start = random.randint(0, int(bg_duration - images_clip.duration))
-    end = start + int(images_clip.duration)
-    print(start, end)
-    bg_clip = bg_clip.subclip(start, end)
-
-    print(bg_clip.size)
-    final_clip = CompositeVideoClip(
-        clips=[bg_clip, images_clip.set_position("center")], size=bg_clip.size
+    bg_clip = (
+        bg_clip.without_audio()
+        .rotate(90)
+        .resize(width=clip_w, height=clip_h)
+        .subclip(bg_start, bg_end)
     )
-
-    final_clip.write_videofile(f"output_video{index}.mp4", fps=10)
-
-    print(f"output_video{index}.mp4")
+    # ------------- bg clip -------------
+    #
+    #
+    #
+    # ------------- overlay clip -------------
+    ol_clip = VideoFileClip(f"./overlay_clips/{random.choice(ol_clips)}")
+    ol_clip = (
+        ol_clip.rotate(90)
+        .set_opacity(0.2)
+        .without_audio()
+        .resize(width=clip_w, height=clip_h)
+        .subclip(0, int(images_clip.duration))
+    )
+    # ------------- overlay clip -------------
+    #
+    #
+    #
+    # ------------- wave clip -------------
+    waves_clip = VideoFileClip(f"./etc/waves.mp4")
+    waves_clip = concatenate_videoclips([waves_clip] * 3)
+    waves_clip = (
+        waves_clip.rotate(90)
+        .set_opacity(0.1)
+        .without_audio()
+        .resize(width=clip_w, height=clip_h)
+        .subclip(0, int(images_clip.duration))
+    )
+    # ------------- wave clip -------------
+    #
+    #
+    #
+    # ------------- bg music -------------
+    music_clip = AudioFileClip("./etc/bg_music.mp3")
+    music_start = random.randint(
+        10, int(music_clip.duration) - int(images_clip.duration)
+    )
+    music_end = music_start + int(images_clip.duration)
+    music_clip = music_clip.subclip(music_start, music_end)
+    bg_clip = bg_clip.set_audio(music_clip)
+    # ------------- bg music -------------
+    #
+    #
+    #
+    final_clip = CompositeVideoClip(
+        clips=[
+            bg_clip.set_position("center"),
+            waves_clip.set_position("center"),
+            images_clip.set_position("center"),
+            ol_clip.set_position("center"),
+        ],
+        size=(clip_w, clip_h),
+    )
+    #
+    #
+    #
+    final_clip.write_videofile(f"./products/{folder}/product_video.mp4", fps=5)
+    # final_clip.write_videofile(f"./trash/product_video{index}.mp4", fps=10)
+    print(f"./products/{folder}/product_video.mp4")
