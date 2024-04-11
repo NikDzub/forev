@@ -13,8 +13,8 @@ import random
 from PIL import Image
 
 # int(1080 / 2)
-clip_w = int(1080 / 2)
-clip_h = int(1920 / 2)
+clip_w = int(1080)
+clip_h = int(1920)
 
 bg_clips = os.listdir(f"./bg_clips")
 ol_clips = os.listdir(f"./overlay_clips")
@@ -26,7 +26,13 @@ for index, folder in enumerate(all_folders):
     #
     #
     #
-    removes = ["info.txt", ".DS_Store", "product_video.mp4"]
+    removes = [
+        "info.txt",
+        ".DS_Store",
+        "product_video.mp4",
+        "icons_info.png",
+        "product_video_0.mp4",
+    ]
     for r in removes:
         try:
             image_files.remove(r)
@@ -84,6 +90,19 @@ for index, folder in enumerate(all_folders):
     #
     #
     #
+    # ------------- icons_info clip -------------
+    icons_info = ImageClip(f"./products/{folder}/icons_info.png")
+    icons_info = (
+        icons_info.resize(width=clip_w - 100)
+        .set_duration(images_clip.duration)
+        .resize(width=clip_w)
+        .fx(vfx.margin, bottom=1, color=(0, 0, 0))
+        # .fx(vfx.rotate, 90)
+    )
+    # ------------- icons_info clip -------------
+    #
+    #
+    #
     # ------------- wave clip -------------
     waves_clip = VideoFileClip(f"./etc/waves.mp4")
     waves_clip = concatenate_videoclips([waves_clip] * 3)
@@ -115,6 +134,7 @@ for index, folder in enumerate(all_folders):
             bg_clip.set_position("center"),
             waves_clip.set_position("center"),
             images_clip.set_position("center"),
+            icons_info.set_position("top"),
             ol_clip.set_position("center"),
         ],
         size=(clip_w, clip_h),
@@ -122,6 +142,6 @@ for index, folder in enumerate(all_folders):
     #
     #
     #
-    final_clip.write_videofile(f"./products/{folder}/product_video.mp4", fps=5)
+    final_clip.write_videofile(f"./products/{folder}/product_video_1.mp4", fps=30)
     # final_clip.write_videofile(f"./trash/product_video{index}.mp4", fps=10)
     print(f"./products/{folder}/product_video.mp4")

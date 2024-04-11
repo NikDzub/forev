@@ -43,7 +43,7 @@ async def scrape_info():
         await page.goto("https://flpil.co.il/", wait_until="load")
 
         #  --------------------------- get images ---------------------------
-        for product in products:
+        for index, product in enumerate(products):
             print("-" * 30)
             images = []
             await page.goto(product, wait_until="load")
@@ -54,13 +54,19 @@ async def scrape_info():
                 )
                 info = await info_selector.inner_text()
 
+                icons_info_selector = await page.query_selector('[data-id="0c50763"]')
+                await icons_info_selector.evaluate(
+                    """e=>{e.style.backgroundColor = "orange";
+                       e.style.padding = "15px"};"""
+                )
+                await page.wait_for_timeout(1000)
+
                 title_selector = await page.query_selector(
                     'h1[class="product_title entry-title"]'
                 )
                 short_name = await title_selector.inner_text()
-
                 try:
-                    os.mkdir(f"./products/{short_name}")
+                    os.mkdir(f"./products/{index}")
                 except:
                     pass
 
@@ -95,14 +101,17 @@ async def scrape_info():
                     ):
                         images.append(src)
 
-                for index, img in enumerate(images):
-
-                    filename = f"image_{index}.jpg"
-                    output_path = os.path.join(f"products/{short_name}", filename)
+                for img_index, img in enumerate(images):
+                    filename = f"image_{img_index}.jpg"
+                    output_path = os.path.join(f"products/{index}", filename)
                     download_image(img, output_path)
 
-                    with open(f"products/{short_name}/info.txt", "w") as outfile:
-                        outfile.write(info)
+                    with open(f"products/{index}/info.txt", "w") as outfile:
+                        outfile.write(f"{short_name} - {info}")
+
+                await icons_info_selector.screenshot(
+                    path=f"products/{index}/icons_info.png"
+                )
 
             except Exception as error:
                 print(error)
