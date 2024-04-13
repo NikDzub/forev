@@ -75,7 +75,7 @@ async def scrape_products():
         for folder in all_folders:
             folder_content = os.listdir(f"./products/{folder}")
 
-            used = ["59", "56", "33", "20", "0", "28"]
+            used = ["59", "56", "33", "20", "0", "28", "1", "19", "36", "62", "37"]
 
             if "product_video_0.mp4" in folder_content and folder not in used:
                 print(folder)
